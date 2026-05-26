@@ -1,119 +1,262 @@
 # SCHOLAR PAY
+# ScholarPay 🎓
 
-**SCHOLAR PAY** 
+> Scholarship funds sent **directly to schools** on Stellar — students never touch the money.
 
-## Project Description
+![Stellar](https://img.shields.io/badge/Stellar-Soroban-blue?logo=stellar)
+![Network](https://img.shields.io/badge/Network-Testnet-yellow)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-Stellar Notes DApp is a decentralized smart contract solution built on the Stellar blockchain using Soroban SDK. It provides a secure, immutable platform for managing personal notes directly on the blockchain. The contract ensures that your data is stored transparently and is only manageable through predefined smart contract functions, eliminating reliance on centralized database providers.
+---
 
-The system allows users to create, view, and delete notes, leveraging the efficiency and security of the Stellar network. Each note is uniquely identified and stored within the contract's instance storage, ensuring data persistence and reliability.
+## 🇵🇭 The Problem
 
-## Project Vision
+A nursing student at UST Manila receives a ₱25,000 CHED scholarship stipend deposited into her GCash. Rent is due, her siblings need food money, and tuition is still 3 weeks away. She spends it. The scholarship body has no way to know — and no recourse. The student drops out at end of semester.
 
-Our vision is to revolutionize personal productivity in the digital age by:
+This is not rare. Scholarship leakage is a documented, widespread problem across Philippine state universities and CHED-funded programs.
 
-- **Decentralizing Data**: Moving note-taking from centralized servers to a global, distributed blockchain
-- **Ensuring Ownership**: Empowering users to have complete control and ownership over their digital thoughts and information
-- **Guaranteeing Immutability**: Providing a permanent, tamper-proof record of notes that cannot be altered or deleted by third parties
-- **Enhancing Privacy**: Leveraging blockchain security to protect personal information from unauthorized access
-- **Building Trustless Systems**: Creating a platform where data integrity is guaranteed by code, not by company promises
+---
 
-We envision a future where digital information is truly personal and sovereign, empowering individuals with complete autonomy over their digital assets.
+## 💡 The Solution
 
-## Key Features
+**ScholarPay** holds scholarship funds inside a Soroban smart contract. When a grant is created, the destination is **permanently locked to the school's verified wallet** — not the student's. The student can trigger the payment, but they cannot redirect it. The money lands directly at the registrar's office.
 
-### 1. **Simple Note Creation**
+> **The student never touches the money. The tuition always gets paid.**
 
-- Create notes with just one function call
-- Specify title and content for each note
-- Automated ID generation for unique identification
-- Persistent storage on the Stellar blockchain
+---
 
-### 2. **Efficient Data Retrieval**
+## 🔄 How It Works
 
-- Fetch all stored notes in a single call
-- Structured data representation for easy frontend integration
-- Quick access to your entire note collection
-- Real-time synchronization with the blockchain state
+```
+CHED / NGO (Admin)
+    │
+    ├── register_school(UST wallet)         → Whitelist verified school wallets
+    ├── register_scholar(Maria, UST)        → Bind student to their school
+    ├── create_grant(GRANT-001, Maria, ₱25,000, Sem1)
+    │       └── school_wallet LOCKED to UST's wallet at creation
+    │
+    └── Funds deposited into contract
 
-### 3. **Secure Deletion**
+Maria (Student)
+    │
+    └── disburse(GRANT-001)
+            └── Contract sends ₱25,000 → UST Registrar wallet
+                Student wallet receives ₱0
+```
 
-- Remove specific notes using their unique IDs
-- Permanent removal from the contract storage
-- Clean and efficient storage management
-- Immediate update of the note list after deletion
+---
 
-### 4. **Transparency and Security**
+## ⚙️ Stellar Features Used
 
-- View all note activities on the blockchain
-- Blockchain-based verification of all storage actions
-- Immutable records of note creation and deletion
-- Protected against unauthorized modifications
+| Feature | Purpose |
+|---|---|
+| **Soroban smart contracts** | Locks destination wallet at grant creation; enforces transfer rules |
+| **token::Client (XLM / USDC)** | Direct on-chain transfer from contract to school — no intermediary |
+| **Trustlines** | USDC support for stable-value grants (avoids XLM price volatility) |
+| **Contract storage whitelisting** | Only registered school wallets can ever receive funds |
 
-### 5. **Stellar Network Integration**
+---
 
-- Leverages the high speed and low cost of Stellar
-- Built using the modern Soroban Smart Contract SDK
-- Scalable architecture for growing note collections
-- Interoperable with other Stellar-based services
+## 👥 Target Users
 
-## Contract Details
+| Who | Where | Why they care |
+|---|---|---|
+| CHED / DepEd scholarship officers | Manila, Visayas, Mindanao | No more cash leakage, full audit trail |
+| University registrars | Any LUC / SUC in PH | Guaranteed tuition receipt, no follow-up needed |
+| Scholars (C/D bracket families) | Nationwide | Triggers disbursement, but can't misuse funds |
+| NGOs (Ayala Foundation, SM Foundation) | Metro PH | Donors verify 100% of funds reached tuition |
+
+---
+
+## 🗂️ Project Structure
+
+```
+contracts/
+└── scholar_pay/
+    ├── Cargo.toml
+    └── src/
+        ├── lib.rs       ← smart contract
+        └── test.rs      ← 5 tests
+Cargo.toml               ← workspace
+README.md
+```
+
+---
+
+## 📋 Contract Functions
+
+| Function | Who calls it | What it does |
+|---|---|---|
+| `initialize` | Admin (once) | Sets the admin wallet |
+| `register_school` | Admin | Whitelists a school wallet |
+| `register_scholar` | Admin | Binds a student to their school |
+| `create_grant` | Admin | Creates a grant locked to the school wallet |
+| `disburse` | Student or Admin | Sends funds directly to school, never student |
+| `get_grant` | Anyone | Reads grant details and status |
+| `get_scholar` | Anyone | Reads scholar info and total paid |
+| `get_school` | Anyone | Reads school info |
+
+---
+
+## 🎬 MVP Demo Flow (90 seconds)
+
+| Step | Who | Action | On-chain result |
+|---|---|---|---|
+| 1 | Admin | `register_school` | UST wallet whitelisted |
+| 2 | Admin | `register_scholar` | Maria bound to UST |
+| 3 | Admin | `create_grant` | Grant locked to UST wallet |
+| 4 | Maria | `disburse` | ₱25,000 sent to UST, Maria gets ₱0 |
+| 5 | Anyone | `get_grant` | Shows `disbursed: true` ✅ |
+
+---
+
+## 🛠️ Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (stable)
+- `rustup target add wasm32-unknown-unknown`
+- [Stellar CLI](https://developers.stellar.org/docs/tools/developer-tools/cli/install-stellar-cli) v21+
+- [Freighter Wallet](https://freighter.app) (set to Testnet)
+- Free testnet XLM from [Friendbot](https://friendbot.stellar.org)
+
+---
+
+## 🔧 Build
+
+```bash
+stellar contract build --manifest-path contracts/scholar_pay/Cargo.toml
+```
+
+Output: `target/wasm32v1-none/release/scholar_pay.wasm`
+
+---
+
+## 🧪 Test
+
+```bash
+cargo test
+```
+
+5 tests covering:
+- ✅ Full happy path — funds go to school, not student
+- ✅ Attacker cannot disburse another's grant
+- ✅ State verification after disburse
+- ✅ Double disburse blocked
+- ✅ Scholar cannot be bound to unregistered school
+
+---
+
+## 🚀 Deploy to Testnet
+
+**1. Generate and fund a key:**
+```bash
+stellar keys generate mykey --network testnet
+stellar keys fund mykey --network testnet
+```
+
+**2. Upload the wasm:**
+```bash
+stellar contract upload \
+  --wasm target/wasm32v1-none/release/scholar_pay.wasm \
+  --source mykey \
+  --network testnet
+```
+
+**3. Deploy:**
+```bash
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/scholar_pay.wasm \
+  --source mykey \
+  --network testnet
+```
+
+Save the **Contract ID** returned — you'll need it for all invocations.
+
+---
+
+## 📞 Invoke Functions
+
+**Initialize:**
+```bash
+stellar contract invoke --id CONTRACT_ID --source mykey --network testnet \
+  -- initialize --admin $(stellar keys address mykey)
+```
+
+**Register a school:**
+```bash
+stellar contract invoke --id CONTRACT_ID --source mykey --network testnet \
+  -- register_school \
+  --caller $(stellar keys address mykey) \
+  --school_wallet GUST_REGISTRAR_WALLET \
+  --name "University of Santo Tomas"
+```
+
+**Register a scholar:**
+```bash
+stellar contract invoke --id CONTRACT_ID --source mykey --network testnet \
+  -- register_scholar \
+  --caller $(stellar keys address mykey) \
+  --wallet GSTUDENT_WALLET \
+  --school_id "UST-2024-0012" \
+  --name "Maria Santos" \
+  --school_wallet GUST_REGISTRAR_WALLET
+```
+
+**Create a grant (500 XLM):**
+```bash
+stellar contract invoke --id CONTRACT_ID --source mykey --network testnet \
+  -- create_grant \
+  --caller $(stellar keys address mykey) \
+  --grant_id "GRANT-001" \
+  --scholar_wallet GSTUDENT_WALLET \
+  --amount 5000000000 \
+  --semester "AY2024-2025 Sem1"
+```
+
+**Disburse — student triggers, money goes to school:**
+```bash
+stellar contract invoke --id CONTRACT_ID --source mykey --network testnet \
+  -- disburse \
+  --caller GSTUDENT_WALLET \
+  --grant_id "GRANT-001" \
+  --token_address CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+```
+
+**Verify — show judges this:**
+```bash
+stellar contract invoke --id CONTRACT_ID --network testnet \
+  -- get_grant --grant_id "GRANT-001"
+```
+
+Or view live on: `https://stellar.expert/explorer/testnet/contract/CONTRACT_ID`
+
+---
+
+## 🏆 Why This Project
+
+- **Real Philippine problem** — CHED/DepEd scholarship leakage is publicly documented
+- **Enforced by code, not policy** — the contract makes misuse physically impossible
+- **100% auditable** — every peso is traceable on Stellar Explorer
+- **Near-zero fees** — Stellar makes even ₱500 micropayments viable
+- **One-liner pitch**: *"A scholarship where the student can never spend the money on anything except school"*
+
+---
+
+## 🔮 Future Plans
+
+- AI-powered enrollment verification before grant creation
+- USDC stable grants via trustlines (no XLM volatility risk)
+- Mobile app for students to track their grant status
+- Multi-school support for nationwide CHED rollout
+
+---
+
+## 📄 License
+
+MIT — Free to use, fork, and build on.
+
+---
+
+*Built for Stellar PH Bootcamp Hackathon 🇵🇭*
 
 - Contract Address: CB2OUA6FKQOB5R5XHJUOLZDB4TN7DR7IS25WNI6LI3LDVGPYBY2P7CZV
   <img width="1920" height="953" alt="image" src="https://github.com/user-attachments/assets/72f4c5a0-a0c3-49e1-9458-09c5659605da" />
-
-
-## Future Scope
-
-### Short-Term Enhancements
-
-1. **Note Encryption**: Support for end-to-end encryption of note content for enhanced privacy
-2. **Category Management**: Add tags and categories to organize notes efficiently
-3. **Rich Text Support**: Extend support beyond plain text to include Markdown and formatted content
-4. **Search Functionality**: Implement advanced search filters for large note collections
-
-### Medium-Term Development
-
-5. **Collaborative Notes**: Implement multi-signature requirements for shared or collaborative note-taking
-   - Shared access for multiple addresses
-   - Permission-based editing and viewing
-   - Version history tracking
-6. **Notification System**: Off-chain bridge to alert users of new updates or shared notes
-7. **Asset Attachment**: Capability to attach digital assets or tokens to specific notes
-8. **Inter-Contract Integration**: Allow other smart contracts to interact with and store data in the notes contract
-
-### Long-Term Vision
-
-9. **Cross-Chain Synchronization**: Extend note storage to multiple blockchain networks
-10. **Decentralized UI Hosting**: Host the frontend on IPFS or similar decentralized platforms
-11. **AI-Powered Summarization**: Optional integration with AI to help users summarize their notes
-12. **Privacy Layers**: Implement zero-knowledge proofs for completely private note content
-13. **DAO Governance**: Community-driven protocol improvements and feature prioritization
-14. **Identity Management**: Integration with decentralized identity (DID) systems for user management
-
-### Enterprise Features
-
-15. **Corporate Documentation**: Adapt the system for secure corporate record-keeping
-16. **Immutable Logging**: Create time-locked logs for audit purposes
-17. **Automated Reporting**: Automatic note triggers for periodic reporting
-18. **Multi-Language Support**: Expand accessibility with internationalization
-
----
-
-## Technical Requirements
-
-- Soroban SDK
-- Rust programming language
-- Stellar blockchain network
-
-## Getting Started
-
-Deploy the smart contract to Stellar's Soroban network and interact with it using the three main functions:
-
-- `create_note()` - Create a new note with a title and content
-- `get_notes()` - Retrieve all stored notes from the contract
-- `delete_note()` - Remove a specific note by its ID
-
----
-
-**Stellar Notes DApp** - Securing Your Thoughts on the Blockchain
