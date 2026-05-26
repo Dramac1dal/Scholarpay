@@ -1,6 +1,6 @@
-# Stellar Notes DApp
+# SCHOLAR PAY
 
-**Stellar Notes DApp** - Blockchain-Based Decentralized Note-Taking System
+**SCHOLAR PAY** 
 
 ## Project Description
 
